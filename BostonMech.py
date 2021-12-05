@@ -15,10 +15,10 @@ class BostonMechanism(object):
         acceptor_capacity: np.array of shape (k,)
         """
 
-        self.proposing = proposing
-        self.accepting = accepting
-        self.proposer_capacity = proposer_capacity
-        self.acceptor_capacity = acceptor_capacity
+        self.proposing = proposing.copy()
+        self.accepting = accepting.copy()
+        self.proposer_capacity = proposer_capacity.copy()
+        self.acceptor_capacity = acceptor_capacity.copy()
 
         # check validity of preference orders
         self.check_pref_validity()

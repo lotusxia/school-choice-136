@@ -1,0 +1,189 @@
+\documentclass{article}
+\usepackage{geometry}
+\geometry{a4paper,scale=0.8}
+\setlength{\parskip}{1.5ex}
+\usepackage{listings}
+\usepackage{setspace}
+\usepackage{color}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{dirtree}
+\usepackage{amsmath,amsfonts}
+\usepackage{tikz} 
+\usepackage{etoolbox}
+\AtBeginEnvironment{quote}{\singlespace\vspace{-\topsep}\small}
+\AtEndEnvironment{quote}{\vspace{-\topsep}\endsinglespace}
+\usetikzlibrary{positioning}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue
+    }
+\urlstyle{same}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{dgray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{dgray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+\newcommand{\TODO}[1]{
+{\color{red}\textbf{[TODO: #1]}}}
+
+\title{What Works the Best for Boston: Boston Mechanism, Deferred Acceptance, and More}
+% \title{CS 136 Final Project}
+\author{Ryan Liu and Lotus Xia}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% \section{Notes}
+% assignment policy: \url{https://www.bostonpublicschools.org/cms/lib/MA01906464/Centricity/Domain/187/DiscoverBPS%2021%20English.pdf}
+
+% Students can select all Boston high schools. 33 high schools, 17 open enrollment HS. In simulation, use 27 high school. School preference is based on priority scores of each student: 1. sibling priority (attribute 2 points), and 2. east Boston/ Non-est Boston priority (attribute 1 point). The schools use a random tie breaker for students with the same priority score. 
+
+
+% One school choice strategy is to find a school you like that is undersubscribed and put it as a top choice, OR, find a school that you like that is popular and put it as a first choice and find a school that is less popular for a “safe” second choice. (Pathak and Sonmez 2008)
+
+
+\section{Introduction}
+
+\section{Simulation}
+We set up the simulation to closely follow the institutional setting in the Boston area. To reduce the simulation difficulty, we focus on high school admissions. 
+
+There are a total of 33 high schools in the Boston area, 17 of which are open for general enrollment (``open enrollment schools''). The remaining 16 schools requires additional application requirements or special admission. We take the institutional details of these 17 open enrollment schools for our simulation. The number of students in our simulation equals 1880, which is the estimated capacity of 9th grade in these 17 school. As a comparison, there are approximately 4000 rising 9th graders in Boston Public high school system.\footnote{Boston Public School at a Glance, 2019-2020, \url{https://www.bostonpublicschools.org/cms/lib/MA01906464/Centricity/Domain/187/BPS\%20at\%20a\%20Glance\%202019-20\_FINAL.pdf}} In each simulation iteration, we randomly draw 20\% of the students to be sophisticated, and the rest are sincere. Sophisticated students strategize and choose to misreport in all mechanism. We later vary the percentage of sophisticated students to study the effect on overall welfare. 
+
+\subsection{School Preference}
+Schools rank students based on their ``priority'' score. We focus on two types of priorities that affect admission into 9th grade, namely sibling priority and geographic priority. On the one hand, student $i$ has a higher priority at school $j$ if said students has a sibling currently enrolled in school $j$. This policy is to keep families together in the same school if that is what parents prefer. On the other hand, given Boston's unique geography, students who live in East Boston are given priority to schools in East Boston, and students who live outside of East Boston are given priority to schools outside of East Boston. Only one school among the 17 open enrollment schools are located in East Boston area. Schools has a lexicographic preference of sibling priority to geographic priority. 
+
+We attempt to simulate the school preference in the following steps:
+\begin{enumerate}
+  \item For each student, randomly draw whether she has a proper-age-sibling with probability 0.3. Randomly assign the sibling to enroll in one of the 17 schools with equal probability. 
+  \item For each student, randomly draw whether she lives in Each Boston with probability 0.1.
+  \item For each pair of student $i$ and school $j$, compute the priority score as $2\times \text{sibling priority} + \text{geography priority}$. Then generate the cardinal utility of school $j$ for getting student $i$ as the priority score plus as random noise from $U[0,1]$. 
+  \item The preference order of each school is then computed based on the cardinal utility. 
+\end{enumerate}
+
+\subsection{Student Preference}
+On the official guide to Boston Public School choice, each high school is given a ``SQF Tier'' as a measure of the overall quality of the school. The official guide suggests families should use the SQF score to better inform themselves and make customized school choice. The SQF score is from 1 to 4, with 1 being the highest rating. 
+
+Based on the SQF score, we generate student preference in the following steps:
+\begin{enumerate}
+  \item Each school is assigned a quality score of 10 minus the its SQF score so that higher number is better. 
+  \item For each pair of student $i$ and school $j$, compute the cardinal utility of student $i$ for getting into school $j$ as the quality score plus a randomly noise from $N(0,1)$. 
+  \item The preference order of each student is then computed based on the cardinal utility. 
+\end{enumerate}
+
+\subsection{Misreport}
+
+Sophisticated students may choose to misreport in the Boston Mechanism. In fact, West Zone Parents Group (WZPG), a well-informed group that regularly meet prior to admission time to discuss Boston school choice recommends two types of strategies to its members:
+\begin{quote}
+One school choice strategy is to find a school you like that is undersubscribed and put it as a top choice, OR, find a school that you like that is popular and put it as a first choice and find a school that is less popular for a “safe” second choice.    
+\end{quote}
+
+We closely follow these suggestions and simulated two types of misreport. 
+\begin{enumerate}
+  \item Student $i$ looks at her top 3 choices and checks which school is ``safe.'' She reports her favorite safe school as her top choice, and truthfully report the preference order of all the other schools. If none of the top 3 choices are safe, then she report her preferences truthfully. 
+  \item Student $i$ truthfully reports her first choice. She then looks at her second through fifth choices, and reports her favorite safe school among them as second choice. She then truthfully report the rest of her preference. Again, if none of the 4 schools are safe, then she report her preferences truthfully. 
+\end{enumerate}
+In both cases, a school $j$ is safe for student $i$ if, under truthful reporting by everyone, $i$ can for sure get accepted by school $j$ as long as student $i$ lists school $j$ as first choice in the Boston Mechanism, i.e. the number of students who list school $j$ as first choice in their true preference and are preferred by school $j$ to student $i$ is smaller than the capacity of school $j$.
+
+We make two notes about these misreports. First, the strategies assume that sophisticated students have complete knowledge over 1) who list school $j$ as first choice and 2) who are preferred by school $j$. In real life, families can estimate the popularity of each school as well as the relative priority of themselves among all applicants. However, their estimates may not be so accurate. Second, the strategies does not take into account equilibrium effect. For instance, student $i$ may theoretically end up rejected by school $j$ even if $j$ is safe for $i$, since other students may misreport their top choice and make school $j$ more popular. In fact, many existing papers on school choice study the Bayes-Nash equilibrium property of the Boston Mechanism. However, we believe that it is unlikely that families in real life have a good understanding of the Nash Equilibrium of a game involving thousands of students and tens of school. A naive strategy that only looks one step ahead may be more realistic in this setting. 
+
+In deferred acceptance, sophisticated student report truthfully since it is the dominant strategy in a strategy proof mechanism. 
+
+\section{Deferred Acceptance vs. Boston Mechanism}
+All results below are based on 50 independent iterations of simulation. 
+
+\subsection{Fairness Comparison}
+In this section, we focus on the fairness comparison between Deferred Acceptance and the Boston Mechanism. We examine what types of outcomes are achieved by the sophisticated and the sincere students. 
+
+Figure \ref{fig:figure1} compares the fraction of sincere and sophisticated students who get into their $k$th favoriate schools in Deferred Acceptance and in the Boston Mechanism. The distributions for sophisticated and sincere students are almost identical under deferred acceptance, since both types of students use the same, truthful strategy. On the contrary, the distributions differs under the Boston Mechanism. In particular, while the fraction is similar with respect to the top choice, sophisticated students are more likely than sincere students to get into their second or third favorite school. Specifically, approximately 10\% of sophisticated students get their second and third choice, but the numbers are 3\% and 6\% for sincere students. 
+
+These patterns are quite intuitive given the misreport we use in simulation. The sophisticated students strategize to secure a reasonable good school. 
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.99\textwidth]{../figures/DA_frac_choice.png}\\
+  \includegraphics[width=0.99\textwidth]{../figures/BM_frac_choice.png}
+  \caption{Fraction of students who get their $k$th favorite school in Deferred Acceptance and Boston Mechanism}
+  \label{fig:figure1}
+\end{figure}
+
+In addition, we also compare the average and standard deviation of the ordinal ranks of students' final match under Deferred Acceptance and the Boston Mechanism in Figure \ref{fig:figure2}. 
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.99\textwidth]{../figures/rank_ave_std.png}
+  \caption{In each simulation iteration, we compute the average ordinal ranks (standard deviation of ranks) of students' final matches under their true preferences. Then we take an average across all simulation iterations to get the height of each bar. The error bar is $\pm 1.96$ standard deviation of the mean across iterations. 
+  }
+  \label{fig:figure2}
+\end{figure}
+
+\subsection{Welfare Comparison}
+In this section, we compare the overall welfare achieved under the Deferred Acceptance and the Boston Mechanism. 
+
+Figures \ref{fig:figure1} and \ref{fig:figure2} already allude to the overall better outcomes in the Boston Mechanism. In Figure \ref{fig:figure1}, we see that the fraction of students who get into their favorite school is much higher in the Boston Mechanism than in Deferred Acceptance. Similarly, in Figure \ref{fig:figure2}, both sophisticated and sincere students achieve a more favorable ranking in the Boston Mechanism. 
+
+Figure \ref{fig:figure3} attempts to exhibit the welfare comparison more clearly. In each simulation, we compute the outcome ranking in Deferred Acceptance minus the outcome ranking in the Boston Mechanism for each student. %Then we average across the 50 iterations to get an expected change in ranking, and 
+We then pool the difference in ranking across iterations and plot the distribution for sophisticated and sincere students separately. Note that a positive change means that the outcome ranking in Deferred Acceptance is less favorable than that in the Boston Mechanism. 
+
+We make three major observations:
+First, approximately 25\% of the students have the same matching in the Boston Mechanism and in Deferred Acceptance. 
+Second, the majority of students achieve a more favorable outcome in the Boston Mechanism than in Deferred Acceptance in expectation. This is evident by the larger area under the curve  when $x > 0$. 
+Third, sophisticated students tend to prefer the Boston Mechanism. A larger fraction of sophisticated students suffer a loss switching to Deferred Acceptance. 
+This is as expected since Deferred Acceptance levels the playing field for sincere and sophisticated students. 
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.6\textwidth]{../figures/rank_change_hist.png}
+  \caption{Distribution of change in outcome ranking from the Boston Mechanism to Deferred Acceptance for sophisticated and sincere students}
+  \label{fig:figure3}
+\end{figure}
+
+To quantify the change in welfare, we compute the fraction of students who are better off switching from the Boston Mechanism to Deferred Acceptance in each simulation. Averaged over 50 iterations, only \TODO{25.2\%} of students are better off switching to Deferred Acceptance. Specifically, \TODO{19.2\%} of sophisticated students and \TODO{26.7\%} of sincere students are happy about the change. Moreover, each student is worse off by an average of \TODO{1.59} rank switching to Deferred Acceptance.
+
+
+\subsection{Stability Comparison}
+The overall better outcome in the Boston Mechanism comes at the cost of instability. 
+
+All matches given by Deferred Acceptance are stable, so there is 0 blocking pairs.\footnote{We did check that there is no block pair in our Deferred Acceptance outcomes just to make sure :D.}
+
+The Boston Mechanism, on the other hand, is quite unstable. Across 50 iteration, there are on average 3953 blocking pairs among a total of $1884\times17=32,028$ school-student pairs. More than $10\%$ of the pairs are blocking pairs.
+
+\section{Chinese Parallel Mechanism}
+
+We explore the third mechanism, the Chinese Parallel Mechanism, which is a combination of the Boston Mechanism and Deferred acceptance. 
+
+\begin{enumerate}
+  \item Round 1: Each student lists her $e$ favorite schools. Each school lists it preference ordering for all student. We run Deferred Acceptance based on the incomplete preference orders from students and the complete preference orders from school. If a student is rejected by all of the $e$ schools, she remains unassigned in this round, and does not make any application until the next round. The resulting matches from Deferred Acceptance are final, and are not subject to change any more in future rounds. The capacity of each school is reduced by the number of students it gets this round. 
+
+  \item Round $k$: Each unassigned student lists her $ke+1$-th through $(k+1)e$-th favorite schools. We again run Deferred Acceptance based on this set of incomplete student preference orders, the set of complete school preference orders, and the updated school capacity. Students rejected by all of her $ke + e$ through $(k+1)e$ choices remain unassigned in this round and cannot make any applications until the next round. All resulting matches at the end of this round are finalized. 
+
+  \item The algorithm terminates when all students have been assigned to a school.
+\end{enumerate}
+
+We note that the Chinese Parallel Mechanism is identical to Deferred Acceptance when $e = \infty$ and is identical to the Boston Mechanism when $e = 1$. Later on, we use Chinese Parallel Mechanism to refer to mechanisms where $e \not=1$ and $e\not = \infty. $
+
+In our simulation, we run 3 rounds of Chinese Parallel Mechanism. In round 1, students apply to their favorite 3 schools; in round 2, students apply to their 4-6 choices; finally, in round 3, students apply to the rest of her schools. 
+
+Theoretically, DA is more stable than Chinese Parallel, which is more stable than the Boston Mechanism, whereas the Boston Mechanism is more efficient than the Chinese Parallel, which is more efficient than DA. It follows quite intuitively that, while the Boston Mechanism maximizes the number of students receiving their first choices, the Chinese Parallel maximizes the number of students receiving their first $e$ choices. 
+
+
+\end{document}
