@@ -19,13 +19,11 @@ def safe_if_first_choice(
     competitors = np.where(student_pref_mat[:, 0] == which_school)
     # get this student's rank at this school
     this_student_rank = get_rank_at_school(which_school, which_student, school_pref_mat)
-    # print(this_student_rank)
     # get the number of students at this school who are above this student's rank
     num_above = (
         np.sum(school_pref_mat[which_school, competitors] < this_student_rank)
         + 5 * np.random.randn()
     )
-    # print(num_above)
     # compare this student's rank to this school's capacity
     safe = num_above < school_capacities[which_school]
     return safe
@@ -250,8 +248,8 @@ def misreport2(true_student_pref, soph_students, school_pref, school_capacities)
         ):  # safe choice is the second choice: no change in reported preference
             continue
         else:  # if safe schoice is >second choice, change reported preference
-            new_pref = true_student_pref[student, :].copy()
-            new_pref[1], new_pref[i] = safe_school, new_pref[1]
+            # new_pref = true_student_pref[student, :].copy()
+            # new_pref[1], new_pref[i] = safe_school, new_pref[1]
 
             old_pref = true_student_pref[student, :].copy()
             new_pref = np.array(
@@ -271,7 +269,7 @@ def misreport2(true_student_pref, soph_students, school_pref, school_capacities)
 def misreport3(true_student_pref, soph_students, school_pref, school_capacities):
 
     # strategy:
-    # Among top 5 schools, pick the top 3 safe school and report them as the first 3 schools
+    # Report first and second choice truthfully, but report third choice as a safe choice.
 
     strat_top = 5
     reported_student_pref = true_student_pref.copy()
@@ -279,8 +277,9 @@ def misreport3(true_student_pref, soph_students, school_pref, school_capacities)
     # Strategies:
     # One school choice strategy is to find a school you like that is undersubscribed and put it as a top choice
     for student in soph_students:
-        safe_list = []
-        for i in range(strat_top):
+        safe_school = None
+        # [0,1,2,3,4,5]
+        for i in range(2, strat_top):
             which_school = reported_student_pref[student, i]
             safe = safe_if_first_choice(
                 which_school,
@@ -289,24 +288,27 @@ def misreport3(true_student_pref, soph_students, school_pref, school_capacities)
                 true_student_pref,
                 school_capacities,
             )
-            safe_list.append(safe)
-            # as soon as we find 3 safe schools, break
-            if len(np.array(safe_list) == True) >= 3:
+            if safe:
+                safe_school = which_school
                 break
-        safe_list = np.array(safe_list)
 
-        # if no safe schools, no change in reported preference
-        if np.array(safe_list == False).all():
+        if safe_school is None:  # no safe school for this student
             continue
-        else:
-            safe_schools = np.where(safe_list == True)[0]
-            reach_schools = np.where(safe_list == False)[0]
-            old_pref = true_student_pref[student, :].copy()
-            # misreport the first 3 safe schools as first 3 schools
-            new_pref = np.r_[
-                old_pref[safe_schools], old_pref[reach_schools], old_pref[strat_top:]
-            ]
+        elif (
+            safe_school == true_student_pref[student, 2]
+        ):  # safe choice is the third choice: no change in reported preference
+            continue
+        else:  # if safe schoice is >second choice, change reported preference
+            # new_pref = true_student_pref[student, :].copy()
+            # new_pref[2], new_pref[i] = safe_school, new_pref[1]
 
+            old_pref = true_student_pref[student, :].copy()
+            new_pref = np.array(
+                [old_pref[0], old_pref[1]]
+                + [safe_school]
+                + list(old_pref[2:i])
+                + list(old_pref[i + 1 :])
+            )
         # update preference in student_pref
         reported_student_pref[student, :] = new_pref
         reported_student_pref = reported_student_pref.astype(int)
@@ -357,7 +359,7 @@ def run_simulation(
     reported_student_pref_BM = misreport2(
         reported_student_pref_BM, soph2_idx, school_ordinal, school_capacities
     )
-    reported_student_pref_CP = misreport2(
+    reported_student_pref_CP = misreport3(
         student_ordinal, soph_idx, school_ordinal, school_capacities
     )
 
@@ -373,7 +375,7 @@ def run_simulation(
     BM_matching, BM_matching_school = BM.run(verbose=False)
 
     CP = ChineseParallel(
-        reported_student_pref_BM, school_ordinal, student_capacities, school_capacities
+        reported_student_pref_CP, school_ordinal, student_capacities, school_capacities
     )
     CP_matching, CP_matching_school = CP.run(breaks=[3, 6])
 
@@ -746,23 +748,13 @@ def plot_results(results, n_iter, metric, plot_related, CP=False):
     std_CP_val = CP_vals.std(axis=0)
     if CP:
         x = np.array(range(3 * nvals))
-        mean_DA_vals_plot = np.array(list(mean_DA_vals) + [0, 0, 0, 0])
-        mean_BM_vals_plot = np.array([0, 0] + list(mean_BM_vals) + [0, 0])
-        mean_CP_vals_plot = np.array([0, 0, 0, 0] + list(mean_CP_vals))
-        std_DA_val_plot = np.array(list(std_DA_val) + [0, 0, 0, 0])
-        std_BM_val_plot = np.array([0, 0] + list(std_BM_val) + [0, 0])
-        std_CP_val_plot = np.array([0, 0, 0, 0] + list(std_CP_val))
+        mean_DA_vals_plot = np.array([0, 0, 0, 0] + list(mean_DA_vals))
+        mean_BM_vals_plot = np.array(list(mean_BM_vals) + [0, 0, 0, 0])
+        mean_CP_vals_plot = np.array([0, 0] + list(mean_CP_vals) + [0, 0])
+        std_DA_val_plot = np.array([0, 0, 0, 0] + list(std_DA_val))
+        std_BM_val_plot = np.array(list(std_BM_val) + [0, 0, 0, 0])
+        std_CP_val_plot = np.array([0, 0] + list(std_CP_val) + [0, 0])
 
-        canvas.bar(
-            x,
-            mean_DA_vals_plot,
-            width=0.6,
-            color="darkblue",
-            alpha=0.6,
-            yerr=1.96 * std_DA_val_plot,
-            capsize=8,
-            label="Deferred Acceptance",
-        )
         canvas.bar(
             x,
             mean_BM_vals_plot,
@@ -783,17 +775,6 @@ def plot_results(results, n_iter, metric, plot_related, CP=False):
             capsize=8,
             label="Chinese Parallel",
         )
-        canvas.set_xticks(range(3 * nvals), ticks)
-        if legend:
-            canvas.legend(bbox_to_anchor=(0.6, -0.18), ncol=3)
-        canvas.set(title=title, ylabel=y_label, xlabel="student types")
-    else:
-        x = np.array(range(2 * nvals))
-        mean_DA_vals_plot = np.array(list(mean_DA_vals) + [0, 0])
-        mean_BM_vals_plot = np.array([0, 0] + list(mean_BM_vals))
-        std_DA_val_plot = np.array(list(std_DA_val) + [0, 0])
-        std_BM_val_plot = np.array([0, 0] + list(std_BM_val))
-
         canvas.bar(
             x,
             mean_DA_vals_plot,
@@ -804,6 +785,17 @@ def plot_results(results, n_iter, metric, plot_related, CP=False):
             capsize=8,
             label="Deferred Acceptance",
         )
+        canvas.set_xticks(range(3 * nvals), ticks)
+        if legend:
+            canvas.legend(bbox_to_anchor=(0.6, -0.18), ncol=3)
+        canvas.set(title=title, ylabel=y_label, xlabel="student types")
+    else:
+        x = np.array(range(2 * nvals))
+        mean_DA_vals_plot = np.array([0, 0] + list(mean_DA_vals))
+        mean_BM_vals_plot = np.array(list(mean_BM_vals) + [0, 0])
+        std_DA_val_plot = np.array([0, 0] + list(std_DA_val))
+        std_BM_val_plot = np.array(list(std_BM_val) + [0, 0])
+
         canvas.bar(
             x,
             mean_BM_vals_plot,
@@ -814,13 +806,30 @@ def plot_results(results, n_iter, metric, plot_related, CP=False):
             capsize=8,
             label="Boston Mechanism",
         )
+        canvas.bar(
+            x,
+            mean_DA_vals_plot,
+            width=0.6,
+            color="darkblue",
+            alpha=0.6,
+            yerr=1.96 * std_DA_val_plot,
+            capsize=8,
+            label="Deferred Acceptance",
+        )
+
         canvas.set_xticks(range(2 * nvals), ticks)
         if legend:
             canvas.legend(bbox_to_anchor=(0.38, -0.18), ncol=2)
         canvas.set(title=title, ylabel=y_label, xlabel="student types")
+    print("Average for DA:", mean_DA_vals_plot)
+    print("Average for BM:", mean_BM_vals_plot)
+    print("Average for CP:", mean_CP_vals_plot)
+    print("Standard Deviation for DA:", std_DA_val_plot)
+    print("Standard Deviation for BM:", std_BM_val_plot)
+    print("Standard Deviation for CP:", std_CP_val_plot)
 
 
-def plot_hist(to_plot, plot_related):
+def plot_hist(to_plot, plot_related, legend_pos="best"):
     print("(min, max):", (to_plot.min(), to_plot.max()))
     canvas = plot_related[0]
     plot_title = plot_related[1]
@@ -840,4 +849,4 @@ def plot_hist(to_plot, plot_related):
         label=plot_label,
     )
     canvas.set(title=plot_title, ylabel=plot_y_label, xlabel=plot_x_label)
-    canvas.legend()
+    canvas.legend(loc=legend_pos)
