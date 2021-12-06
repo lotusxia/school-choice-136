@@ -1,7 +1,7 @@
 ## CS136 final project repo
 authors: Ryan Liu and Lotus Xia
 
-### Files
+### scipts in code/
 - `BostonMech.py`
 - `DA.py`
 - `ChineseParallel.py`
